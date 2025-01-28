@@ -1,0 +1,39 @@
+module fir_filter(
+  input logic clk,
+  input logic rst,
+  input logic signed [15:0] x_in, 
+  output logic signed [15:0] y_out
+);
+
+  // Define the coefficients of the FIR filter
+  parameter integer NUM_TAPS = 5; // Number of filter taps
+  logic signed [15:0] coeffs [0:NUM_TAPS-1] = '{16'd10, 16'd20, 16'd30, 16'd20, 16'd10}; 
+
+  // Declare registers for the input samples
+  logic signed [15:0] x_reg [0:NUM_TAPS-1];
+
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      // Reset the registers to zero
+      for (integer i = 0; i < NUM_TAPS; i++) begin
+        x_reg[i] <= 16'd0;
+      end
+    end else begin
+      // Shift the input samples through the register array
+      for (integer i = NUM_TAPS-1; i > 0; i--) begin
+        x_reg[i] <= x_reg[i-1];
+      end
+      x_reg[0] <= x_in; 
+    end
+  end
+
+  // Calculate the output of the FIR filter
+  always_comb begin
+    logic signed [31:0] acc = 0; 
+    for (integer i = 0; i < NUM_TAPS; i++) begin
+      acc += x_reg[i] * coeffs[i]; 
+    end
+    y_out = acc[15:0]; // Truncate the result to 16 bits
+  end
+
+endmodule
